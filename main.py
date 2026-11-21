@@ -6,33 +6,34 @@
 # See the solution video in the 100 Days of Python Course for explainations.
 
 
-from datetime import datetime
-import pandas
+import datetime as dt
+import pandas as pd
 import random
 import smtplib
 import os
+
+letter_templates = ["letter_1.txt", "letter_2.txt", "letter_3.txt"]
 
 # import os and use it to get the Github repository secrets
 MY_EMAIL = os.environ.get("MY_EMAIL")
 MY_PASSWORD = os.environ.get("MY_PASSWORD")
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+now = dt.datetime.now()
+month = now.month
+day = now.day
+today = (month, day)
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
-
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+birthdays = pd.read_csv("birthdays.csv")
+for index, row in birthdays.iterrows():
+    name = row["name"]
+    birthday = (row.month, row.day)
+    if birthday == today:
+        letter_template = random.choice(letter_templates)
+        with open(f"letter_templates/{letter_template}") as template:
+            content = template.read()
+            content = content.replace("[NAME]", name)
+        # print(content)
+        with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+            connection.starttls()
+            connection.login(user=MY_EMAIL, password=MY_PASSWORD)
+            connection.sendmail(from_addr=MY_EMAIL, to_addrs=row.email, msg=f"Subject:Happy Birthday!\n\n{content}")
